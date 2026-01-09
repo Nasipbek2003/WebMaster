@@ -86,11 +86,15 @@ export default function SearchPage() {
         if (!response.ok) throw new Error('Ошибка при поиске услуг');
 
         const allServices = await response.json();
-        const filtered = allServices.filter((service: Service) =>
-          service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          service.category.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const filtered = allServices.filter((service: Service) => {
+          const searchLower = searchTerm.toLowerCase();
+          return (
+            service.name?.toLowerCase().includes(searchLower) ||
+            service.description?.toLowerCase().includes(searchLower) ||
+            service.shortDescription?.toLowerCase().includes(searchLower) ||
+            service.category?.toLowerCase().includes(searchLower)
+          );
+        });
 
         setServices(filtered);
         setMasters([]);
@@ -108,13 +112,15 @@ export default function SearchPage() {
           // Получаем мастеров из всех категорий
           for (const category of categories) {
             try {
-              const mastersResponse = await fetch(`/api/masters/${category.id}`);
+              // Используем slug вместо id для поиска мастеров
+              const mastersResponse = await fetch(`/api/masters/${category.slug || category.id}`);
               if (mastersResponse.ok) {
                 const categoryMasters = await mastersResponse.json();
                 allMasters.push(...categoryMasters);
               }
             } catch (err) {
               // Продолжаем поиск
+              console.error(`Error fetching masters for category ${category.slug}:`, err);
             }
           }
 

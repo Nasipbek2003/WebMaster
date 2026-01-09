@@ -55,6 +55,31 @@ export async function getServiceById(id: string): Promise<Service | null> {
 }
 
 /**
+ * Получить список всех категорий услуг
+ */
+export async function getCategories() {
+  try {
+    // Используем внутренний API endpoint
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/categories`, {
+      cache: 'no-store', // Для SSR
+      next: { revalidate: 0 },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch categories');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    // Возвращаем пустой массив вместо моковых данных
+    return [];
+  }
+}
+
+/**
  * Отправить заказ
  */
 export async function createOrder(order: Order): Promise<OrderResponse> {

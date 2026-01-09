@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -14,11 +14,36 @@ import {
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Проверка, если пользователь уже авторизован - редиректим его
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (status === 'authenticated' && session?.user) {
+      const callbackUrl = searchParams?.get('callbackUrl');
+      
+      // Если есть callbackUrl и он валидный путь, используем его
+      if (callbackUrl && callbackUrl.startsWith('/')) {
+        router.push(callbackUrl);
+        return;
+      }
+
+      // Редиректим в зависимости от роли
+      if (session.user.role === 'MASTER') {
+        router.push('/master/dashboard');
+      } else if (session.user.role === 'ADMIN') {
+        router.push('/');
+      } else {
+        router.push('/profile');
+      }
+    }
+  }, [status, session, router, searchParams]);
 
   useEffect(() => {
     if (searchParams?.get('registered') === 'true') {
@@ -32,6 +57,8 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
+      const callbackUrl = searchParams?.get('callbackUrl');
+      
       const result = await signIn('credentials', {
         email,
         password,
@@ -44,14 +71,41 @@ export default function SignInPage() {
         return;
       }
 
-      // Перенаправление в зависимости от роли
-      router.push('/');
+      // Обновляем сессию для получения данных пользователя
       router.refresh();
+      
+      // Перенаправление в зависимости от callbackUrl
+      // Используем setTimeout для того, чтобы сессия успела обновиться
+      setTimeout(() => {
+        if (callbackUrl && callbackUrl.startsWith('/')) {
+          router.push(callbackUrl);
+        } else {
+          router.push('/');
+        }
+      }, 100);
     } catch (err) {
       setError('Произошла ошибка при входе');
       setLoading(false);
     }
   };
+
+  // Показываем загрузку, пока проверяем сессию
+  if (status === 'loading') {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Если пользователь уже авторизован, не показываем форму (будет редирект)
+  if (status === 'authenticated') {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 
 const cities = [
@@ -19,10 +19,43 @@ const cities = [
 export default function CitySelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState('Бишкек');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        dropdownRef.current &&
+        buttonRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200 relative group px-3 py-2 rounded-lg hover:bg-primary-50 active:scale-95"
       >
@@ -40,12 +73,10 @@ export default function CitySelector() {
       </button>
 
       {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          ></div>
-          <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden">
+        <div
+          ref={dropdownRef}
+          className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden"
+        >
             <div className="p-2">
               <div className="text-xs font-semibold text-gray-500 px-3 py-2 mb-1">
                 Выберите город
@@ -67,8 +98,7 @@ export default function CitySelector() {
                 </button>
               ))}
             </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

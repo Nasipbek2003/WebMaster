@@ -16,6 +16,7 @@ async function main() {
         slug: 'plumbing',
         description: 'Ремонт и установка сантехники',
         icon: '🔧',
+        image: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&h=600&fit=crop',
       },
     }),
     prisma.serviceCategory.upsert({
@@ -26,6 +27,7 @@ async function main() {
         slug: 'electrician',
         description: 'Электромонтажные работы',
         icon: '⚡',
+        image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800&h=600&fit=crop',
       },
     }),
     prisma.serviceCategory.upsert({
@@ -36,6 +38,7 @@ async function main() {
         slug: 'appliance',
         description: 'Ремонт бытовой техники',
         icon: '🔨',
+        image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop',
       },
     }),
     prisma.serviceCategory.upsert({
@@ -46,6 +49,7 @@ async function main() {
         slug: 'carpenter',
         description: 'Изготовление мебели и ремонт',
         icon: '🪵',
+        image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&h=600&fit=crop',
       },
     }),
     prisma.serviceCategory.upsert({
@@ -56,6 +60,7 @@ async function main() {
         slug: 'painter',
         description: 'Покраска и отделка',
         icon: '🎨',
+        image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&h=600&fit=crop',
       },
     }),
     prisma.serviceCategory.upsert({
@@ -66,6 +71,7 @@ async function main() {
         slug: 'ac',
         description: 'Установка кондиционеров',
         icon: '❄️',
+        image: 'https://images.unsplash.com/photo-1621905252472-8af5ffc6b4c0?w=800&h=600&fit=crop',
       },
     }),
   ])

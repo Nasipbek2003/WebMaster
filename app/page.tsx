@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import { getServices } from '@/lib/api';
-import ServiceCard from '@/components/ServiceCard';
+import { getCategories } from '@/lib/api';
+import CategoryCard from '@/components/CategoryCard';
 import { 
   BoltIcon, 
   CheckBadgeIcon, 
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const services = await getServices();
+  const categories = await getCategories();
 
   // Структурированные данные для SEO
   const structuredData = {
@@ -87,19 +87,19 @@ export default async function HomePage() {
           </h2>
           <div className="hidden md:block w-24 h-1 bg-gradient-to-r from-primary-600 to-primary-400 rounded-full"></div>
         </div>
-        {services.length === 0 ? (
+        {categories.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">Услуги временно недоступны</p>
+            <p className="text-gray-600 text-lg">Категории услуг временно недоступны</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {services.map((service, index) => (
+            {categories.map((category, index) => (
               <div 
-                key={service.id} 
+                key={category.id} 
                 className="animate-slide-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <ServiceCard service={service} />
+                <CategoryCard category={category} />
               </div>
             ))}
           </div>

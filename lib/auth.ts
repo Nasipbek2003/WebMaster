@@ -48,18 +48,38 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 дней
+    updateAge: 24 * 60 * 60, // Обновлять каждый день
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 дней
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // При первом входе сохраняем данные пользователя в токен
       if (user) {
+        token.id = user.id
+        token.email = user.email
+        token.name = user.name
         token.role = user.role
       }
+
+      // При обновлении сессии (например, через trigger: 'update')
+      if (trigger === 'update' && session) {
+        if (session.name) token.name = session.name
+        if (session.email) token.email = session.email
+        if (session.role) token.role = session.role
+      }
+
       return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.sub!
+      // Сохраняем все данные из токена в сессию
+      if (token && session.user) {
+        session.user.id = token.id as string || token.sub!
+        session.user.email = token.email as string || session.user.email
+        session.user.name = token.name as string || session.user.name
         session.user.role = token.role as string
       }
       return session

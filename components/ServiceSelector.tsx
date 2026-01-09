@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   WrenchScrewdriverIcon,
@@ -33,6 +33,38 @@ const getCategoryIcon = (categoryId: string) => {
 export default function ServiceSelector() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        dropdownRef.current &&
+        buttonRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
 
   const handleCategoryClick = (categoryId: string) => {
     router.push(`/masters/${categoryId}`);
@@ -42,6 +74,7 @@ export default function ServiceSelector() {
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="nav-link hidden md:flex items-center gap-1 active:scale-95"
       >
@@ -58,12 +91,10 @@ export default function ServiceSelector() {
       </button>
 
       {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          ></div>
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden max-h-96 overflow-y-auto">
+        <div
+          ref={dropdownRef}
+          className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden max-h-96 overflow-y-auto"
+        >
             <div className="p-2">
               <div className="text-xs font-semibold text-gray-500 px-3 py-2 mb-1">
                 Выберите категорию услуг
@@ -90,8 +121,7 @@ export default function ServiceSelector() {
                 </button>
               ))}
             </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

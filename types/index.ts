@@ -36,8 +36,13 @@ export interface OrderResponse {
 export interface ServiceCategory {
   id: string;
   name: string;
-  icon: string;
-  description: string;
+  slug: string;
+  icon?: string | null;
+  image?: string | null;
+  description?: string | null;
+  isActive: boolean;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface Master {

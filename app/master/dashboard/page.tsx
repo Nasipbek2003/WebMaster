@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -52,6 +52,7 @@ export default function MasterDashboard() {
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const dataLoadedRef = useRef(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -64,9 +65,13 @@ export default function MasterDashboard() {
         router.push('/');
         return;
       }
-      loadData();
+      // Загружаем данные только один раз при первой загрузке
+      if (!dataLoadedRef.current) {
+        loadData();
+        dataLoadedRef.current = true;
+      }
     }
-  }, [status, session, router]);
+  }, [status, session?.user?.role, router]);
 
   const loadData = async () => {
     try {

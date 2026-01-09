@@ -2,7 +2,6 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   UserIcon,
   WrenchScrewdriverIcon,
@@ -11,7 +10,6 @@ import {
 
 export default function AuthButton() {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
   if (status === 'loading') {
     return (
@@ -22,6 +20,7 @@ export default function AuthButton() {
   if (session?.user) {
     return (
       <div className="flex items-center gap-3">
+        {/* Показываем "Панель мастера" только для мастеров */}
         {session.user.role === 'MASTER' && (
           <Link
             href="/master/dashboard"
