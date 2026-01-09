@@ -1,0 +1,257 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Пользователи системы
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  password  String?
+  role      UserRole @default(CLIENT)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  accounts Account[]
+  sessions Session[]
+  orders   Order[]
+  reviews  Review[]
+  master   Master?
+
+  @@map("users")
+}
+
+// Роли пользователей
+enum UserRole {
+  CLIENT  // Клиент
+  MASTER  // Мастер
+  ADMIN   // Администратор
+}
+
+// Аккаунты для NextAuth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// Сессии для NextAuth
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Токены верификации
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Категории услуг
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  icon        String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Связи
+  services Service[]
+  masters  Master[]
+
+  @@map("service_categories")
+}
+
+// Мастера
+model Master {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  bio          String?
+  experience   Int     @default(0) // Опыт в годах
+  hourlyRate   Float? // Почасовая ставка
+  isVerified   Boolean @default(false)
+  isAvailable  Boolean @default(true)
+  rating       Float   @default(0)
+  reviewsCount Int     @default(0)
+  
+  // Рабочие области
+  workRadius   Int?    // Радиус работы в км
+  address      String?
+  city         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories ServiceCategory[]
+  services   Service[]
+  orders     Order[]
+  reviews    Review[]
+  portfolio  Portfolio[]
+
+  @@map("masters")
+}
+
+// Услуги
+model Service {
+  id               String  @id @default(cuid())
+  name             String
+  description      String  @db.Text
+  shortDescription String?
+  price            Float
+  priceType        PriceType @default(FIXED) // Фиксированная цена или от суммы
+  duration         Int?    // Продолжительность в минутах
+  isActive         Boolean @default(true)
+  
+  // Изображения
+  images           String[] // Массив URL изображений
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  categoryId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+  masterId   String
+  master     Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  orders     Order[]
+  reviews    Review[]
+
+  @@map("services")
+}
+
+// Типы цен
+enum PriceType {
+  FIXED    // Фиксированная цена
+  FROM     // Цена от
+  HOURLY   // Почасовая оплата
+}
+
+// Заказы
+model Order {
+  id                 String      @id @default(cuid())
+  orderNumber        String      @unique
+  status             OrderStatus @default(PENDING)
+  
+  // Информация о заказе
+  problemDescription String      @db.Text
+  address            String
+  city               String?
+  preferredTime      DateTime?
+  urgency            Urgency     @default(NORMAL)
+  
+  // Цены
+  estimatedPrice     Float?
+  finalPrice         Float?
+  
+  // Даты
+  scheduledAt        DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  // Связи
+  clientId  String
+  client    User    @relation(fields: [clientId], references: [id])
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id])
+  masterId  String
+  master    Master  @relation(fields: [masterId], references: [id])
+  review    Review?
+
+  @@map("orders")
+}
+
+// Статусы заказов
+enum OrderStatus {
+  PENDING     // Ожидает подтверждения
+  CONFIRMED   // Подтвержден
+  IN_PROGRESS // В работе
+  COMPLETED   // Завершен
+  CANCELLED   // Отменен
+}
+
+// Срочность заказа
+enum Urgency {
+  LOW    // Низкая
+  NORMAL // Обычная
+  HIGH   // Высокая
+  URGENT // Срочно
+}
+
+// Отзывы
+model Review {
+  id      String @id @default(cuid())
+  rating  Int    // От 1 до 5
+  comment String @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  orderId   String  @unique
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    User    @relation(fields: [clientId], references: [id])
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id])
+  masterId  String
+  master    Master  @relation(fields: [masterId], references: [id])
+
+  @@map("reviews")
+}
+
+// Портфолио мастеров
+model Portfolio {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  images      String[] // Массив URL изображений
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  masterId String
+  master   Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio")
+}

@@ -1,0 +1,75 @@
+'use client';
+
+import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  UserIcon,
+  WrenchScrewdriverIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
+
+export default function AuthButton() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  if (status === 'loading') {
+    return (
+      <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+    );
+  }
+
+  if (session?.user) {
+    return (
+      <div className="flex items-center gap-3">
+        {session.user.role === 'MASTER' && (
+          <Link
+            href="/master/dashboard"
+            className="nav-link flex items-center gap-1"
+          >
+            <WrenchScrewdriverIcon className="w-5 h-5" />
+            <span className="hidden md:inline">Панель мастера</span>
+          </Link>
+        )}
+        <Link
+          href="/profile"
+          className="flex items-center gap-2 px-3 py-2 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+          title="Личный кабинет"
+        >
+          <UserIcon className="w-5 h-5 text-primary-600" />
+          <span className="hidden md:inline text-sm font-medium text-primary-700">
+            {session.user.name || session.user.email}
+          </span>
+        </Link>
+        <button
+          onClick={() => {
+            signOut({ callbackUrl: '/' });
+          }}
+          className="nav-link flex items-center gap-1"
+          title="Выйти"
+        >
+          <ArrowRightOnRectangleIcon className="w-5 h-5" />
+          <span className="hidden md:inline">Выйти</span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Link
+        href="/auth/signin"
+        className="nav-link"
+      >
+        Войти
+      </Link>
+      <Link
+        href="/auth/signup"
+        className="btn-primary text-sm px-4 py-2"
+      >
+        Регистрация
+      </Link>
+    </div>
+  );
+}
+
