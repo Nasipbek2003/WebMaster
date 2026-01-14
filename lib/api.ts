@@ -3,13 +3,23 @@ import { Service, Order, OrderResponse } from '@/types';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
- * Получить список всех услуг
+ * Получить список всех услуг (с пагинацией)
  */
-export async function getServices(): Promise<Service[]> {
+export async function getServices(page: number = 1, limit: number = 12): Promise<{
+  services: Service[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}> {
   try {
     // Используем внутренний API endpoint
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/services`, {
+    const response = await fetch(`${baseUrl}/api/services?page=${page}&limit=${limit}`, {
       cache: 'no-store', // Для SSR
       next: { revalidate: 0 },
     });
@@ -22,8 +32,18 @@ export async function getServices(): Promise<Service[]> {
     return data;
   } catch (error) {
     console.error('Error fetching services:', error);
-    // Возвращаем пустой массив вместо моковых данных
-    return [];
+    // Возвращаем пустую структуру при ошибке
+    return {
+      services: [],
+      pagination: {
+        page: 1,
+        limit: 12,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    };
   }
 }
 

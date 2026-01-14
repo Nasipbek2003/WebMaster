@@ -6,6 +6,7 @@ export interface Service {
   price: number;
   image: string;
   category: string;
+  priceType?: 'FIXED' | 'FROM' | 'HOURLY';
   reviews?: Review[];
 }
 

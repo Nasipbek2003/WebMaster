@@ -3,7 +3,35 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import MasterCard from '@/components/MasterCard';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  WrenchScrewdriverIcon,
+  BoltIcon,
+  Cog6ToothIcon,
+  PaintBrushIcon,
+  CloudIcon,
+  CubeIcon,
+} from '@heroicons/react/24/outline';
+
+// Функция для получения иконки категории
+const getCategoryIcon = (categoryId: string) => {
+  switch (categoryId) {
+    case 'plumbing':
+      return WrenchScrewdriverIcon;
+    case 'electrician':
+      return BoltIcon;
+    case 'appliance':
+      return Cog6ToothIcon;
+    case 'carpenter':
+      return CubeIcon;
+    case 'painter':
+      return PaintBrushIcon;
+    case 'ac':
+      return CloudIcon;
+    default:
+      return WrenchScrewdriverIcon;
+  }
+};
 
 interface MastersPageProps {
   params: Promise<{
@@ -124,7 +152,14 @@ export default async function MastersPage({ params }: MastersPageProps) {
 
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <span className="text-3xl sm:text-4xl flex-shrink-0">{category.icon}</span>
+          {(() => {
+            const IconComponent = getCategoryIcon(category.slug || category.id);
+            return (
+              <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-primary-100 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-primary-600" />
+              </div>
+            );
+          })()}
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 gradient-text break-words">
               {category.name}

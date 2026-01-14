@@ -42,8 +42,9 @@ export default function AuthButton() {
           </span>
         </Link>
         <button
-          onClick={() => {
-            signOut({ callbackUrl: '/' });
+          onClick={async () => {
+            await signOut({ redirect: false });
+            window.location.href = '/';
           }}
           className="nav-link flex items-center gap-1 px-2 sm:px-3 py-2"
           title="Выйти"

@@ -2,14 +2,23 @@ import { Metadata } from 'next';
 import { getServices } from '@/lib/api';
 import ServiceCard from '@/components/ServiceCard';
 import Link from 'next/link';
+import Pagination from '@/components/Pagination';
+
+interface ServicesPageProps {
+  searchParams: Promise<{
+    page?: string;
+  }>;
+}
 
 export const metadata: Metadata = {
   title: 'Все услуги - МастерСервис',
   description: 'Полный каталог услуг от проверенных мастеров. Сантехник, электрик, ремонт техники и многое другое.',
 };
 
-export default async function ServicesPage() {
-  const services = await getServices();
+export default async function ServicesPage({ searchParams }: ServicesPageProps) {
+  const params = await searchParams;
+  const currentPage = parseInt(params.page || '1', 10);
+  const { services, pagination } = await getServices(currentPage, 12);
 
   return (
     <div className="animate-fade-in px-3 sm:px-4 md:px-6">
@@ -44,17 +53,40 @@ export default async function ServicesPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-          {services.map((service, index) => (
-            <div 
-              key={service.id} 
-              className="animate-slide-up"
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <ServiceCard service={service} />
+        <>
+          <div className="mb-4 sm:mb-6">
+            <p className="text-sm sm:text-base text-gray-600">
+              Найдено услуг: <span className="font-semibold text-gray-900">{pagination.totalCount}</span>
+              {pagination.totalPages > 1 && (
+                <span className="ml-2">
+                  (Страница {pagination.page} из {pagination.totalPages})
+                </span>
+              )}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            {services.map((service, index) => (
+              <div 
+                key={service.id} 
+                className="animate-slide-up"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <ServiceCard service={service} />
+              </div>
+            ))}
+          </div>
+
+          {pagination.totalPages > 1 && (
+            <div className="mt-8 sm:mt-12">
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                baseUrl="/services"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

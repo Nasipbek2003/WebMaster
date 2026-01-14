@@ -1,7 +1,9 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { getCategories, getServices } from '@/lib/api';
 import CategoryCard from '@/components/CategoryCard';
 import ServiceCard from '@/components/ServiceCard';
+import { ServiceCategory } from '@/types';
 import { 
   BoltIcon, 
   CheckBadgeIcon, 
@@ -14,10 +16,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [categories, services] = await Promise.all([
+  const [categories, servicesData] = await Promise.all([
     getCategories(),
-    getServices()
+    getServices(1, 6) // Получаем первые 6 услуг для главной страницы
   ]);
+  
+  const services = servicesData.services;
 
   // Структурированные данные для SEO
   const structuredData = {
@@ -97,7 +101,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {categories.map((category, index) => (
+            {categories.map((category: ServiceCategory, index: number) => (
               <div 
                 key={category.id} 
                 className="animate-slide-up"
@@ -139,7 +143,7 @@ export default async function HomePage() {
         )}
         {services.length > 6 && (
           <div className="text-center mt-8 sm:mt-12">
-            <a
+            <Link
               href="/services"
               className="inline-flex items-center gap-2 btn-primary px-6 sm:px-8 py-3 sm:py-4 text-base font-semibold"
             >
@@ -147,7 +151,7 @@ export default async function HomePage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
-            </a>
+            </Link>
           </div>
         )}
       </section>

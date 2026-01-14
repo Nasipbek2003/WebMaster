@@ -1,9 +1,26 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Получаем все активные услуги из базы данных
+    // Получаем параметры пагинации из query string
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+    const skip = (page - 1) * limit;
+
+    // Валидация параметров
+    const validPage = Math.max(1, page);
+    const validLimit = Math.min(Math.max(1, limit), 100); // Максимум 100 на страницу
+
+    // Получаем общее количество услуг для пагинации
+    const totalCount = await prisma.service.count({
+      where: {
+        isActive: true,
+      },
+    });
+
+    // Получаем услуги с пагинацией
     const services = await prisma.service.findMany({
       where: {
         isActive: true,
@@ -28,6 +45,8 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
+      skip: (validPage - 1) * validLimit,
+      take: validLimit,
     });
 
     // Преобразуем данные в формат, ожидаемый фронтендом
@@ -58,7 +77,22 @@ export async function GET() {
       })),
     }));
 
-    return NextResponse.json(formattedServices);
+    // Вычисляем метаданные пагинации
+    const totalPages = Math.ceil(totalCount / validLimit);
+    const hasNextPage = validPage < totalPages;
+    const hasPrevPage = validPage > 1;
+
+    return NextResponse.json({
+      services: formattedServices,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        totalCount,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
+      },
+    });
   } catch (error) {
     console.error('Error fetching services:', error);
     return NextResponse.json(

@@ -262,7 +262,7 @@ export default function MasterOrderForm({
                   value={formData.customerName}
                   onChange={handleChange}
                   required={!session}
-                  readOnly={session && formData.customerName}
+                  readOnly={!!(session && formData.customerName)}
                   className={`input-field w-full ${session && formData.customerName ? 'bg-gray-50' : ''}`}
                   placeholder="Введите ваше имя"
                 />
@@ -279,7 +279,7 @@ export default function MasterOrderForm({
                   value={formData.phone}
                   onChange={handleChange}
                   required={!session}
-                  readOnly={session && formData.phone}
+                  readOnly={!!(session && formData.phone)}
                   className={`input-field w-full ${session && formData.phone ? 'bg-gray-50' : ''}`}
                   placeholder="+996 555 123 456"
                 />
@@ -296,7 +296,7 @@ export default function MasterOrderForm({
                   value={formData.address}
                   onChange={handleChange}
                   required
-                  readOnly={session && formData.address}
+                  readOnly={!!(session && formData.address)}
                   className={`input-field w-full ${session && formData.address ? 'bg-gray-50' : ''}`}
                   placeholder="Город, улица, дом, квартира"
                 />

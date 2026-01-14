@@ -14,10 +14,19 @@ interface ServicePageProps {
 }
 
 export async function generateStaticParams() {
-  const services = await getServices();
-  return services.map((service) => ({
-    id: service.id,
-  }));
+  try {
+    // Получаем все услуги для генерации статических страниц
+    // Используем большой лимит, чтобы получить все услуги
+    const { services } = await getServices(1, 1000);
+    return services.map((service) => ({
+      id: service.id,
+    }));
+  } catch (error) {
+    // Если не удалось получить услуги (например, БД недоступна при build),
+    // возвращаем пустой массив - страницы будут генерироваться динамически
+    console.warn('Failed to generate static params for services:', error);
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: ServicePageProps): Promise<Metadata> {

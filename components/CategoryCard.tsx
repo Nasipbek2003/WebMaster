@@ -1,12 +1,42 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import {
+  WrenchScrewdriverIcon,
+  BoltIcon,
+  Cog6ToothIcon,
+  PaintBrushIcon,
+  CloudIcon,
+  CubeIcon,
+} from '@heroicons/react/24/outline';
 import { ServiceCategory } from '@/types';
+
+// Функция для получения иконки категории
+const getCategoryIcon = (categoryId: string) => {
+  switch (categoryId) {
+    case 'plumbing':
+      return WrenchScrewdriverIcon;
+    case 'electrician':
+      return BoltIcon;
+    case 'appliance':
+      return Cog6ToothIcon;
+    case 'carpenter':
+      return CubeIcon;
+    case 'painter':
+      return PaintBrushIcon;
+    case 'ac':
+      return CloudIcon;
+    default:
+      return WrenchScrewdriverIcon;
+  }
+};
 
 interface CategoryCardProps {
   category: ServiceCategory;
 }
 
 export default function CategoryCard({ category }: CategoryCardProps) {
+  const IconComponent = getCategoryIcon(category.id);
+  
   return (
     <Link 
       href={`/masters/${category.slug}`}
@@ -22,26 +52,19 @@ export default function CategoryCard({ category }: CategoryCardProps) {
             className="object-cover group-hover:scale-110 transition-transform duration-500"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-        ) : category.icon ? (
-          <div className="absolute inset-0 flex items-center justify-center z-20">
-            <span className="text-5xl sm:text-6xl md:text-7xl transition-transform duration-300 group-hover:scale-110">
-              {category.icon}
-            </span>
-          </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center z-20">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <span className="text-3xl sm:text-4xl">🔧</span>
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+              <IconComponent className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
             </div>
           </div>
         )}
-        {category.icon && (
-          <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-xl sm:text-2xl">{category.icon}</span>
-            </div>
+        {/* Иконка в правом верхнем углу */}
+        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110">
+            <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
           </div>
-        )}
+        </div>
       </div>
       <div className="p-4 sm:p-5 md:p-6">
         <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 group-hover:text-primary-600 transition-colors duration-200 break-words">

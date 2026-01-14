@@ -199,7 +199,7 @@ export async function sendNewOrderNotificationToMaster(
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 Новый заказ!</h1>
+          <h1>Новый заказ!</h1>
           <p>Заказ #${orderNumber}</p>
         </div>
         <div class="content">
@@ -293,33 +293,28 @@ export async function sendOrderStatusUpdateToClient(
   scheduledAt?: Date,
   finalPrice?: number
 ) {
-  const statusMessages: Record<string, { subject: string; message: string; emoji: string }> = {
+  const statusMessages: Record<string, { subject: string; message: string }> = {
     CONFIRMED: {
       subject: `Заказ #${orderNumber} подтвержден`,
       message: 'Ваш заказ подтвержден мастером!',
-      emoji: '✅',
     },
     IN_PROGRESS: {
       subject: `Заказ #${orderNumber} в работе`,
       message: 'Мастер приступил к выполнению вашего заказа.',
-      emoji: '🔧',
     },
     COMPLETED: {
       subject: `Заказ #${orderNumber} завершен`,
       message: 'Ваш заказ успешно завершен!',
-      emoji: '🎉',
     },
     CANCELLED: {
       subject: `Заказ #${orderNumber} отменен`,
       message: 'К сожалению, ваш заказ был отменен.',
-      emoji: '❌',
     },
   };
 
   const statusInfo = statusMessages[status] || {
     subject: `Статус заказа #${orderNumber} изменен`,
     message: `Статус вашего заказа изменен на: ${status}`,
-    emoji: '📋',
   };
 
   const html = `
@@ -387,7 +382,7 @@ export async function sendOrderStatusUpdateToClient(
     <body>
       <div class="container">
         <div class="header">
-          <h1>${statusInfo.emoji} ${statusInfo.message}</h1>
+          <h1>${statusInfo.message}</h1>
           <p>Заказ #${orderNumber}</p>
         </div>
         <div class="content">

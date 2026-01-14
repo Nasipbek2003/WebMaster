@@ -88,7 +88,9 @@ export default function SearchPage() {
 
       // Обработка услуг
       if (servicesResponse.status === 'fulfilled' && servicesResponse.value.ok) {
-        const allServices = await servicesResponse.value.json();
+        const responseData = await servicesResponse.value.json();
+        // API теперь возвращает объект с services и pagination
+        const allServices = responseData.services || responseData; // Поддержка старого формата
         const searchLower = searchTerm.toLowerCase();
         const filtered = allServices.filter((service: Service) => {
           return (
