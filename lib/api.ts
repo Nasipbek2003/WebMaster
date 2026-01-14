@@ -17,10 +17,81 @@ export async function getServices(page: number = 1, limit: number = 12): Promise
   };
 }> {
   try {
-    // Используем внутренний API endpoint
+    // Для серверных компонентов используем прямой доступ к базе данных
+    if (typeof window === 'undefined') {
+      const { prisma } = await import('@/lib/prisma');
+      
+      const validPage = Math.max(1, page);
+      const validLimit = Math.min(Math.max(1, limit), 100);
+      
+      const [totalCount, services] = await Promise.all([
+        prisma.service.count({
+          where: { isActive: true },
+        }),
+        prisma.service.findMany({
+          where: { isActive: true },
+          include: {
+            category: true,
+            master: {
+              include: {
+                user: true,
+              },
+            },
+            reviews: {
+              include: {
+                client: true,
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+              take: 5,
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip: (validPage - 1) * validLimit,
+          take: validLimit,
+        }),
+      ]);
+
+      const formattedServices: Service[] = services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        description: service.description || '',
+        shortDescription: service.shortDescription || service.description?.substring(0, 100) + '...' || '',
+        price: service.price,
+        priceType: service.priceType as 'FIXED' | 'FROM' | 'HOURLY' | undefined,
+        image: service.images && service.images.length > 0 ? service.images[0] : 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&h=600&fit=crop',
+        category: service.category.name,
+        reviews: service.reviews.map((review) => ({
+          id: review.id,
+          author: review.client.name || review.client.email || '',
+          rating: review.rating,
+          comment: review.comment,
+          date: review.createdAt.toISOString().split('T')[0],
+        })),
+      }));
+
+      const totalPages = Math.ceil(totalCount / validLimit);
+      
+      return {
+        services: formattedServices,
+        pagination: {
+          page: validPage,
+          limit: validLimit,
+          totalCount,
+          totalPages,
+          hasNextPage: validPage < totalPages,
+          hasPrevPage: validPage > 1,
+        },
+      };
+    }
+    
+    // Для клиентских компонентов используем API endpoint
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/services?page=${page}&limit=${limit}`, {
-      cache: 'no-store', // Для SSR
+      cache: 'no-store',
       next: { revalidate: 0 },
     });
 
@@ -32,7 +103,6 @@ export async function getServices(page: number = 1, limit: number = 12): Promise
     return data;
   } catch (error) {
     console.error('Error fetching services:', error);
-    // Возвращаем пустую структуру при ошибке
     return {
       services: [],
       pagination: {
@@ -52,7 +122,54 @@ export async function getServices(page: number = 1, limit: number = 12): Promise
  */
 export async function getServiceById(id: string): Promise<Service | null> {
   try {
-    // Используем внутренний API endpoint
+    // Для серверных компонентов используем прямой доступ к базе данных
+    if (typeof window === 'undefined') {
+      const { prisma } = await import('@/lib/prisma');
+      
+      const service = await prisma.service.findUnique({
+        where: { id, isActive: true },
+        include: {
+          category: true,
+          master: {
+            include: {
+              user: true,
+            },
+          },
+          reviews: {
+            include: {
+              client: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+      });
+
+      if (!service) {
+        return null;
+      }
+
+      return {
+        id: service.id,
+        name: service.name,
+        description: service.description || '',
+        shortDescription: service.shortDescription || service.description?.substring(0, 100) + '...' || '',
+        price: service.price,
+        priceType: service.priceType as 'FIXED' | 'FROM' | 'HOURLY' | undefined,
+        image: service.images && service.images.length > 0 ? service.images[0] : 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&h=600&fit=crop',
+        category: service.category.name,
+        reviews: service.reviews.map((review) => ({
+          id: review.id,
+          author: review.client.name || review.client.email || '',
+          rating: review.rating,
+          comment: review.comment,
+          date: review.createdAt.toISOString().split('T')[0],
+        })),
+      };
+    }
+    
+    // Для клиентских компонентов используем API endpoint
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/services/${id}`, {
       cache: 'no-store',
@@ -79,10 +196,24 @@ export async function getServiceById(id: string): Promise<Service | null> {
  */
 export async function getCategories() {
   try {
-    // Используем внутренний API endpoint
+    // Для серверных компонентов используем прямой доступ к базе данных
+    if (typeof window === 'undefined') {
+      const { prisma } = await import('@/lib/prisma');
+      const categories = await prisma.serviceCategory.findMany({
+        where: {
+          isActive: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+      return categories;
+    }
+    
+    // Для клиентских компонентов используем API endpoint
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/categories`, {
-      cache: 'no-store', // Для SSR
+      cache: 'no-store',
       next: { revalidate: 0 },
     });
 
@@ -94,7 +225,6 @@ export async function getCategories() {
     return data;
   } catch (error) {
     console.error('Error fetching categories:', error);
-    // Возвращаем пустой массив вместо моковых данных
     return [];
   }
 }

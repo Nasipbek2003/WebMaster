@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   description: 'Выберите нужную услугу и закажите вызов мастера на дом. Сантехник, электрик, ремонт бытовой техники и многое другое.',
 };
 
+// Делаем страницу динамической, чтобы данные загружались при каждом запросе
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function HomePage() {
   const [categories, servicesData] = await Promise.all([
     getCategories(),
