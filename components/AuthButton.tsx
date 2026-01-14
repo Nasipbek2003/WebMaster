@@ -19,52 +19,54 @@ export default function AuthButton() {
 
   if (session?.user) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
         {/* Показываем "Панель мастера" только для мастеров */}
         {session.user.role === 'MASTER' && (
           <Link
             href="/master/dashboard"
-            className="nav-link flex items-center gap-1"
+            className="nav-link flex items-center gap-1 px-2 sm:px-3 py-2"
+            title="Панель мастера"
           >
-            <WrenchScrewdriverIcon className="w-5 h-5" />
-            <span className="hidden md:inline">Панель мастера</span>
+            <WrenchScrewdriverIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden lg:inline">Панель мастера</span>
           </Link>
         )}
         <Link
           href="/profile"
-          className="flex items-center gap-2 px-3 py-2 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
           title="Личный кабинет"
         >
-          <UserIcon className="w-5 h-5 text-primary-600" />
-          <span className="hidden md:inline text-sm font-medium text-primary-700">
-            {session.user.name || session.user.email}
+          <UserIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
+          <span className="hidden lg:inline text-xs sm:text-sm font-medium text-primary-700 truncate max-w-[100px] lg:max-w-none">
+            {session.user.name || session.user.email?.split('@')[0]}
           </span>
         </Link>
         <button
           onClick={() => {
             signOut({ callbackUrl: '/' });
           }}
-          className="nav-link flex items-center gap-1"
+          className="nav-link flex items-center gap-1 px-2 sm:px-3 py-2"
           title="Выйти"
         >
-          <ArrowRightOnRectangleIcon className="w-5 h-5" />
-          <span className="hidden md:inline">Выйти</span>
+          <ArrowRightOnRectangleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="hidden lg:inline">Выйти</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2">
       <Link
         href="/auth/signin"
-        className="nav-link"
+        className="nav-link px-2 sm:px-3 py-2 text-sm sm:text-base"
       >
-        Войти
+        <span className="hidden sm:inline">Войти</span>
+        <span className="sm:hidden">Вход</span>
       </Link>
       <Link
         href="/auth/signup"
-        className="btn-primary text-sm px-4 py-2"
+        className="btn-primary text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 whitespace-nowrap"
       >
         Регистрация
       </Link>

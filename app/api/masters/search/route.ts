@@ -83,6 +83,7 @@ export async function GET(request: Request) {
                 experience: master.experience,
                 price: service.price,
                 categoryId: category.id,
+                categorySlug: category.slug,
                 categoryName: category.name,
                 city: master.city,
                 description: master.bio || `Профессиональный мастер по категории ${category.name}`,

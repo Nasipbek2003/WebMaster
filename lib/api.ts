@@ -31,26 +31,26 @@ export async function getServices(): Promise<Service[]> {
  * Получить услугу по ID
  */
 export async function getServiceById(id: string): Promise<Service | null> {
-  // Если API URL не настроен или это локальная разработка, используем моковые данные
-  if (!API_BASE_URL || API_BASE_URL.includes('localhost:3001')) {
-    return getMockServices().find(service => service.id === id) || null;
-  }
-
   try {
-    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+    // Используем внутренний API endpoint
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/services/${id}`, {
       cache: 'no-store',
       next: { revalidate: 0 },
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
       throw new Error('Failed to fetch service');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching service:', error);
-    // Возвращаем моковые данные для разработки
-    return getMockServices().find(service => service.id === id) || null;
+    return null;
   }
 }
 
@@ -84,27 +84,34 @@ export async function getCategories() {
  */
 export async function createOrder(order: Order): Promise<OrderResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/orders`, {
+    // Используем внутренний API endpoint
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(order),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create order');
+      const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
+      const errorMessage = errorData.error || 'Failed to create order';
+      
+      // Если ошибка 401, добавляем флаг авторизации
+      if (response.status === 401) {
+        throw new Error(errorMessage);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating order:', error);
-    // Для разработки возвращаем успешный ответ
-    return {
-      success: true,
-      message: 'Заказ успешно создан!',
-      orderId: `order-${Date.now()}`,
-    };
+    // Пробрасываем ошибку дальше, чтобы компонент мог её обработать
+    throw error;
   }
 }
 

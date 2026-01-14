@@ -112,44 +112,47 @@ export default async function MastersPage({ params }: MastersPageProps) {
   const masters = Array.from(mastersMap.values());
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in px-3 sm:px-4 md:px-6">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-6 font-medium transition-colors duration-200 group"
+        className="inline-flex items-center gap-1.5 sm:gap-2 text-primary-600 hover:text-primary-700 mb-4 sm:mb-6 font-medium transition-colors duration-200 group text-sm sm:text-base"
       >
-        <ArrowLeftIcon className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
-        Назад на главную
+        <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+        <span className="hidden sm:inline">Назад на главную</span>
+        <span className="sm:hidden">Назад</span>
       </Link>
 
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-4xl">{category.icon}</span>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 gradient-text">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <span className="text-3xl sm:text-4xl flex-shrink-0">{category.icon}</span>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 gradient-text break-words">
               {category.name}
             </h1>
-            <p className="text-gray-600 mt-1">{category.description}</p>
+            {category.description && (
+              <p className="text-sm sm:text-base text-gray-600 mt-1 break-words">{category.description}</p>
+            )}
           </div>
         </div>
       </div>
 
       {masters.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-gray-600 text-lg mb-4">
+        <div className="card p-6 sm:p-8 md:p-10 lg:p-12 text-center">
+          <p className="text-base sm:text-lg text-gray-600 mb-3 sm:mb-4">
             Мастера по этой категории временно недоступны
           </p>
-          <Link href="/" className="btn-primary">
+          <Link href="/" className="btn-primary text-sm sm:text-base px-4 sm:px-6 py-2.5 sm:py-3">
             Вернуться на главную
           </Link>
         </div>
       ) : (
         <>
-          <div className="mb-6">
-            <p className="text-gray-600">
+          <div className="mb-4 sm:mb-6">
+            <p className="text-sm sm:text-base text-gray-600">
               Найдено мастеров: <span className="font-semibold text-gray-900">{masters.length}</span>
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {masters.map((master, index) => (
               <div
                 key={master.id}

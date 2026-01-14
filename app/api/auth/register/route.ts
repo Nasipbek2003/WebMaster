@@ -6,7 +6,7 @@ import { UserRole } from '@prisma/client';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, phone, role } = body;
+    const { email, password, name, phone, address, role } = body;
 
     // Валидация
     if (!email || !password) {
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         password: hashedPassword,
         name: name || null,
         phone: phone || null,
+        address: address || null, // Адрес только для обычных пользователей
         role: userRole,
       }
     });

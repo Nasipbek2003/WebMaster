@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Order } from '@/types';
 import { createOrder } from '@/lib/api';
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -15,9 +16,11 @@ interface OrderFormProps {
 
 export default function OrderForm({ serviceId, serviceName, masterId, masterName }: OrderFormProps) {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [userData, setUserData] = useState<{ name?: string | null; phone?: string | null; address?: string | null } | null>(null);
 
   const [formData, setFormData] = useState<Order>({
     serviceId: serviceId || '',
@@ -29,29 +32,75 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
     preferredTime: '',
   });
 
+  // Загружаем данные пользователя, если он авторизован
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (status === 'authenticated' && session?.user) {
+        try {
+          const response = await fetch('/api/user/current');
+          if (response.ok) {
+            const data = await response.json();
+            if (data) {
+              setUserData(data);
+              // Автоматически заполняем форму данными пользователя
+              setFormData(prev => ({
+                ...prev,
+                customerName: data.name || '',
+                phone: data.phone || '',
+                address: data.address || '',
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      } else {
+        setUserData(null);
+      }
+    };
+
+    fetchUserData();
+  }, [status, session]);
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const isAuthenticated = status === 'authenticated';
 
-    if (!formData.customerName.trim()) {
-      newErrors.customerName = 'Имя обязательно для заполнения';
+    // Для неавторизованных пользователей все поля обязательны
+    if (!isAuthenticated) {
+      if (!formData.customerName.trim()) {
+        newErrors.customerName = 'Имя обязательно для заполнения';
+      }
+
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Телефон обязателен для заполнения';
+      } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+        newErrors.phone = 'Неверный формат телефона';
+      }
+
+      if (!formData.address.trim()) {
+        newErrors.address = 'Адрес обязателен для заполнения';
+      }
+
+      if (!formData.preferredTime.trim()) {
+        newErrors.preferredTime = 'Удобное время визита обязательно';
+      }
+    } else {
+      // Для авторизованных пользователей проверяем только обязательные поля
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Телефон обязателен для заполнения';
+      } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+        newErrors.phone = 'Неверный формат телефона';
+      }
+
+      if (!formData.address.trim()) {
+        newErrors.address = 'Адрес обязателен для заполнения';
+      }
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Телефон обязателен для заполнения';
-    } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = 'Неверный формат телефона';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = 'Адрес обязателен для заполнения';
-    }
-
+    // Описание проблемы обязательно для всех
     if (!formData.problemDescription.trim()) {
       newErrors.problemDescription = 'Описание проблемы обязательно';
-    }
-
-    if (!formData.preferredTime.trim()) {
-      newErrors.preferredTime = 'Удобное время визита обязательно';
     }
 
     setErrors(newErrors);
@@ -77,9 +126,9 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
         setFormData({
           serviceId: serviceId || '',
           masterId: masterId || '',
-          customerName: '',
-          phone: '',
-          address: '',
+          customerName: status === 'authenticated' ? (userData?.name || '') : '',
+          phone: status === 'authenticated' ? (userData?.phone || '') : '',
+          address: status === 'authenticated' ? (userData?.address || '') : '',
           problemDescription: '',
           preferredTime: '',
         });
@@ -89,9 +138,9 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
           router.push('/');
         }, 3000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting order:', error);
-      setErrors({ submit: 'Произошла ошибка при отправке заказа. Попробуйте еще раз.' });
+      setErrors({ submit: error.message || 'Произошла ошибка при отправке заказа. Попробуйте еще раз.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -133,45 +182,54 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6 animate-fade-in">
       {masterName && (
-        <div className="bg-gradient-to-r from-primary-50 to-blue-50 border-l-4 border-primary-500 p-5 rounded-xl">
-          <label className="block text-sm font-medium text-primary-700 mb-2">Выбранный мастер</label>
-          <p className="text-xl font-bold gradient-text">{masterName}</p>
+        <div className="bg-gradient-to-r from-primary-50 to-blue-50 border-l-4 border-primary-500 p-4 sm:p-5 rounded-xl">
+          <label className="block text-xs sm:text-sm font-medium text-primary-700 mb-2">Выбранный мастер</label>
+          <p className="text-lg sm:text-xl font-bold gradient-text break-words">{masterName}</p>
         </div>
       )}
       {serviceName && !masterName && (
-        <div className="bg-gradient-to-r from-primary-50 to-blue-50 border-l-4 border-primary-500 p-5 rounded-xl">
-          <label className="block text-sm font-medium text-primary-700 mb-2">Выбранная услуга</label>
-          <p className="text-xl font-bold gradient-text">{serviceName}</p>
+        <div className="bg-gradient-to-r from-primary-50 to-blue-50 border-l-4 border-primary-500 p-4 sm:p-5 rounded-xl">
+          <label className="block text-xs sm:text-sm font-medium text-primary-700 mb-2">Выбранная услуга</label>
+          <p className="text-lg sm:text-xl font-bold gradient-text break-words">{serviceName}</p>
+        </div>
+      )}
+
+      {status !== 'authenticated' && (
+        <div>
+          <label htmlFor="customerName" className="block text-sm font-semibold text-gray-700 mb-2">
+            Имя клиента <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="customerName"
+            name="customerName"
+            value={formData.customerName}
+            onChange={handleChange}
+            className={`input-field ${
+              errors.customerName ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
+            placeholder="Введите ваше имя"
+          />
+          {errors.customerName && (
+            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+              <ExclamationTriangleIcon className="w-4 h-4" />
+              {errors.customerName}
+            </p>
+          )}
+        </div>
+      )}
+
+      {status === 'authenticated' && userData && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-3 sm:p-4 rounded-xl">
+          <p className="text-xs sm:text-sm font-medium text-green-700 mb-1.5 sm:mb-2">Ваши данные:</p>
+          <p className="text-base sm:text-lg text-gray-900 font-semibold break-words">{userData.name || 'Не указано'}</p>
         </div>
       )}
 
       <div>
-        <label htmlFor="customerName" className="block text-sm font-semibold text-gray-700 mb-2">
-          Имя клиента <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="customerName"
-          name="customerName"
-          value={formData.customerName}
-          onChange={handleChange}
-          className={`input-field ${
-            errors.customerName ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-          }`}
-          placeholder="Введите ваше имя"
-        />
-        {errors.customerName && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-            <ExclamationTriangleIcon className="w-4 h-4" />
-            {errors.customerName}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="phone" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
           Телефон <span className="text-red-500">*</span>
         </label>
         <input
@@ -180,21 +238,22 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className={`input-field ${
+          readOnly={status === 'authenticated' && !!userData?.phone}
+          className={`input-field text-sm sm:text-base py-2.5 sm:py-3 ${
             errors.phone ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-          }`}
+          } ${status === 'authenticated' && userData?.phone ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           placeholder="+7 (999) 123-45-67"
         />
         {errors.phone && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-            <ExclamationTriangleIcon className="w-4 h-4" />
-            {errors.phone}
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 flex items-center gap-1">
+            <ExclamationTriangleIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span>{errors.phone}</span>
           </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="address" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
           Адрес <span className="text-red-500">*</span>
         </label>
         <input
@@ -203,21 +262,22 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
           name="address"
           value={formData.address}
           onChange={handleChange}
-          className={`input-field ${
+          readOnly={status === 'authenticated' && !!userData?.address}
+          className={`input-field text-sm sm:text-base py-2.5 sm:py-3 ${
             errors.address ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-          }`}
+          } ${status === 'authenticated' && userData?.address ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           placeholder="Город, улица, дом, квартира"
         />
         {errors.address && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-            <ExclamationTriangleIcon className="w-4 h-4" />
-            {errors.address}
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 flex items-center gap-1">
+            <ExclamationTriangleIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span>{errors.address}</span>
           </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="problemDescription" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="problemDescription" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
           Описание проблемы <span className="text-red-500">*</span>
         </label>
         <textarea
@@ -225,42 +285,44 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
           name="problemDescription"
           value={formData.problemDescription}
           onChange={handleChange}
-          rows={5}
-          className={`input-field resize-none ${
+          rows={4}
+          className={`input-field text-sm sm:text-base resize-none py-2.5 sm:py-3 ${
             errors.problemDescription ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
           }`}
           placeholder="Опишите проблему подробно..."
         />
         {errors.problemDescription && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-            <ExclamationTriangleIcon className="w-4 h-4" />
-            {errors.problemDescription}
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 flex items-center gap-1">
+            <ExclamationTriangleIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span>{errors.problemDescription}</span>
           </p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="preferredTime" className="block text-sm font-semibold text-gray-700 mb-2">
-          Удобное время визита <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="preferredTime"
-          name="preferredTime"
-          value={formData.preferredTime}
-          onChange={handleChange}
-          className={`input-field ${
-            errors.preferredTime ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-          }`}
-          placeholder="Например: завтра с 10:00 до 14:00"
-        />
-        {errors.preferredTime && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-            <ExclamationTriangleIcon className="w-4 h-4" />
-            {errors.preferredTime}
-          </p>
-        )}
-      </div>
+      {status !== 'authenticated' && (
+        <div>
+          <label htmlFor="preferredTime" className="block text-sm font-semibold text-gray-700 mb-2">
+            Удобное время визита <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="preferredTime"
+            name="preferredTime"
+            value={formData.preferredTime}
+            onChange={handleChange}
+            className={`input-field ${
+              errors.preferredTime ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
+            }`}
+            placeholder="Например: завтра с 10:00 до 14:00"
+          />
+          {errors.preferredTime && (
+            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+              <ExclamationTriangleIcon className="w-4 h-4" />
+              {errors.preferredTime}
+            </p>
+          )}
+        </div>
+      )}
 
       {errors.submit && (
         <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 animate-scale-in">
@@ -274,15 +336,15 @@ export default function OrderForm({ serviceId, serviceName, masterId, masterName
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full btn-primary disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-lg"
+        className="w-full btn-primary text-sm sm:text-base py-3 sm:py-3.5 md:py-4 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-lg"
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Отправка...
+            <span className="text-sm sm:text-base">Отправка...</span>
           </span>
         ) : (
           'Отправить заказ'

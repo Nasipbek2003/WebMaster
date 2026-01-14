@@ -17,8 +17,32 @@ npm install
 
 ## Настройка
 
-1. Скопируйте `.env.example` в `.env.local` (если нужно изменить API URL)
-2. По умолчанию используется моковый API с тестовыми данными
+1. Создайте файл `.env.local` в корне проекта:
+```env
+# Database
+DATABASE_URL="your-database-url"
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-change-in-production"
+
+# Site URL
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+
+# SMTP Configuration (для отправки email уведомлений)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASSWORD="your-app-password"
+SMTP_FROM="your-email@gmail.com"
+```
+
+2. Для настройки SMTP (Gmail):
+   - Включите двухфакторную аутентификацию в Google аккаунте
+   - Создайте пароль приложения: https://myaccount.google.com/apppasswords
+   - Используйте этот пароль в `SMTP_PASSWORD`
+   - Для других провайдеров укажите соответствующие `SMTP_HOST` и `SMTP_PORT`
 
 ## Запуск
 

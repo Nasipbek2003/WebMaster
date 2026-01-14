@@ -65,13 +65,15 @@ async function main() {
     }),
     prisma.serviceCategory.upsert({
       where: { slug: 'ac' },
-      update: {},
+      update: {
+        image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop&auto=format',
+      },
       create: {
         name: 'Кондиционеры',
         slug: 'ac',
         description: 'Установка кондиционеров',
         icon: '❄️',
-        image: 'https://images.unsplash.com/photo-1621905252472-8af5ffc6b4c0?w=800&h=600&fit=crop',
+        image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&h=600&fit=crop&auto=format',
       },
     }),
   ])

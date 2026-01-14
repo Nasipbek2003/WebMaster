@@ -93,7 +93,7 @@ export default function ServiceSelector() {
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden max-h-96 overflow-y-auto"
+          className="absolute top-full left-0 mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden max-h-96 overflow-y-auto"
         >
             <div className="p-2">
               <div className="text-xs font-semibold text-gray-500 px-3 py-2 mb-1">

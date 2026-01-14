@@ -75,7 +75,7 @@ export default function CitySelector() {
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden"
+          className="absolute top-full right-0 mt-2 w-56 sm:w-64 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-scale-in overflow-hidden"
         >
             <div className="p-2">
               <div className="text-xs font-semibold text-gray-500 px-3 py-2 mb-1">

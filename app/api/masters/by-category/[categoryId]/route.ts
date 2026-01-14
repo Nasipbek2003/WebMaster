@@ -66,6 +66,7 @@ export async function GET(
           experience: master.experience,
           price: service.price,
           categoryId: category.id,
+          categorySlug: category.slug,
           categoryName: category.name,
           phone: master.user.phone || '',
           description: master.bio || `Профессиональный мастер по категории ${category.name}`,
@@ -97,8 +98,3 @@ export async function GET(
     );
   }
 }
-
-
-
-
-

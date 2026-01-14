@@ -17,7 +17,12 @@ import {
   PencilIcon,
   CheckIcon,
   XMarkIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  TruckIcon,
 } from '@heroicons/react/24/outline';
+import { useToast } from '@/components/Toast';
 
 interface UserProfile {
   id: string;
@@ -61,6 +66,10 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [lastOrderStatuses, setLastOrderStatuses] = useState<Record<string, string>>({});
+  const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -72,6 +81,24 @@ export default function ProfilePage() {
       loadProfile();
     }
   }, [status, router]);
+
+  // Загружаем заказы после загрузки профиля
+  useEffect(() => {
+    if (profile && profile.role === 'CLIENT') {
+      loadOrders();
+    }
+  }, [profile]);
+
+  // Запускаем polling для проверки изменений статуса заказов
+  useEffect(() => {
+    if (profile?.role !== 'CLIENT' || orders.length === 0) return;
+
+    const interval = setInterval(() => {
+      checkOrderStatusChanges();
+    }, 30000); // Проверяем каждые 30 секунд
+
+    return () => clearInterval(interval);
+  }, [profile?.role, orders.length]);
 
   const loadProfile = async () => {
     try {
@@ -108,6 +135,72 @@ export default function ProfilePage() {
       setError(err.message || 'Ошибка при загрузке профиля');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const response = await fetch('/api/orders');
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/auth/signin');
+          return;
+        }
+        throw new Error('Ошибка при загрузке заказов');
+      }
+
+      const data = await response.json();
+      setOrders(data);
+      
+      // Сохраняем текущие статусы для отслеживания изменений
+      const statusMap: Record<string, string> = {};
+      data.forEach((order: any) => {
+        statusMap[order.id] = order.status;
+      });
+      setLastOrderStatuses(statusMap);
+    } catch (err: any) {
+      console.error('Error loading orders:', err);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const checkOrderStatusChanges = async () => {
+    if (profile?.role !== 'CLIENT') return;
+    
+    try {
+      const response = await fetch('/api/orders');
+      if (!response.ok) return;
+
+      const data = await response.json();
+      
+      // Проверяем изменения статусов
+      setLastOrderStatuses((prevStatuses) => {
+        const newStatuses: Record<string, string> = {};
+        data.forEach((order: any) => {
+          newStatuses[order.id] = order.status;
+          const oldStatus = prevStatuses[order.id];
+          if (oldStatus && oldStatus !== order.status) {
+            // Статус изменился - показываем уведомление
+            const statusMessages: Record<string, string> = {
+              CONFIRMED: `Заказ #${order.orderNumber} подтвержден мастером!`,
+              IN_PROGRESS: `Мастер приступил к выполнению заказа #${order.orderNumber}.`,
+              COMPLETED: `Заказ #${order.orderNumber} успешно завершен!`,
+              CANCELLED: `Заказ #${order.orderNumber} был отменен.`,
+            };
+            
+            const message = statusMessages[order.status] || `Статус заказа #${order.orderNumber} изменен на: ${order.status}`;
+            showToast(message, order.status === 'COMPLETED' ? 'success' : order.status === 'CANCELLED' ? 'error' : 'info', 6000);
+          }
+        });
+        return newStatuses;
+      });
+
+      setOrders(data);
+    } catch (err) {
+      console.error('Error checking order status changes:', err);
     }
   };
 
@@ -440,7 +533,7 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <CurrencyDollarIcon className="w-4 h-4 inline mr-1" />
-                    Почасовая ставка (₽)
+                    Почасовая ставка (сом)
                   </label>
                   <input
                     type="number"
@@ -598,6 +691,151 @@ export default function ProfilePage() {
           )}
         </form>
       </div>
+
+      {/* История заказов для клиентов */}
+      {profile?.role === 'CLIENT' && (
+        <div className="bg-white rounded-2xl shadow-lg p-6 mt-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <TruckIcon className="w-6 h-6 text-primary-600" />
+            История заказов
+          </h2>
+
+          {ordersLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Загрузка заказов...</p>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-12">
+              <TruckIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg">У вас пока нет заказов</p>
+              <p className="text-gray-500 text-sm mt-2">Сделайте первый заказ, чтобы увидеть его здесь</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => {
+                const getStatusInfo = (status: string) => {
+                  switch (status) {
+                    case 'PENDING':
+                      return {
+                        label: 'Ожидает подтверждения',
+                        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                        icon: ClockIcon,
+                      };
+                    case 'CONFIRMED':
+                      return {
+                        label: 'Подтвержден',
+                        color: 'bg-blue-100 text-blue-800 border-blue-200',
+                        icon: CheckCircleIcon,
+                      };
+                    case 'IN_PROGRESS':
+                      return {
+                        label: 'В работе',
+                        color: 'bg-purple-100 text-purple-800 border-purple-200',
+                        icon: TruckIcon,
+                      };
+                    case 'COMPLETED':
+                      return {
+                        label: 'Завершен',
+                        color: 'bg-green-100 text-green-800 border-green-200',
+                        icon: CheckCircleIcon,
+                      };
+                    case 'CANCELLED':
+                      return {
+                        label: 'Отменен',
+                        color: 'bg-red-100 text-red-800 border-red-200',
+                        icon: XCircleIcon,
+                      };
+                    default:
+                      return {
+                        label: status,
+                        color: 'bg-gray-100 text-gray-800 border-gray-200',
+                        icon: ClockIcon,
+                      };
+                  }
+                };
+
+                const statusInfo = getStatusInfo(order.status);
+                const StatusIcon = statusInfo.icon;
+
+                return (
+                  <div
+                    key={order.id}
+                    className="border-2 border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow duration-200"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-lg font-bold text-gray-900">
+                            Заказ #{order.orderNumber}
+                          </h3>
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.color}`}
+                          >
+                            <StatusIcon className="w-4 h-4" />
+                            {statusInfo.label}
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 text-sm text-gray-600">
+                          <div>
+                            <span className="font-semibold text-gray-700">Услуга:</span>{' '}
+                            {order.service.name}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-700">Мастер:</span>{' '}
+                            {order.master.name}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-700">Адрес:</span>{' '}
+                            {order.address}
+                          </div>
+                          {order.scheduledAt && (
+                            <div>
+                              <span className="font-semibold text-gray-700">Запланировано:</span>{' '}
+                              {new Date(order.scheduledAt).toLocaleString('ru-RU')}
+                            </div>
+                          )}
+                          {order.finalPrice && (
+                            <div>
+                              <span className="font-semibold text-gray-700">Итоговая стоимость:</span>{' '}
+                              <span className="text-primary-600 font-bold">
+                                {order.finalPrice.toLocaleString('ru-RU')} сом
+                              </span>
+                            </div>
+                          )}
+                          {order.estimatedPrice && !order.finalPrice && (
+                            <div>
+                              <span className="font-semibold text-gray-700">Примерная стоимость:</span>{' '}
+                              <span className="text-gray-600">
+                                {order.estimatedPrice.toLocaleString('ru-RU')} сом
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-semibold text-gray-700">Создан:</span>{' '}
+                            {new Date(order.createdAt).toLocaleString('ru-RU')}
+                          </div>
+                        </div>
+
+                        {order.problemDescription && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">Описание:</span> {order.problemDescription}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      <ToastContainer />
     </div>
   );
 }
