@@ -121,7 +121,7 @@ export default function ServiceSelector() {
                 </button>
               ))}
             </div>
-        </div>
+          </div>
       )}
     </div>
   );

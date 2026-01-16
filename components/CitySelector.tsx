@@ -98,7 +98,7 @@ export default function CitySelector() {
                 </button>
               ))}
             </div>
-        </div>
+          </div>
       )}
     </div>
   );
